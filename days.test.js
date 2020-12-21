@@ -4,6 +4,7 @@ const { identity, map, addIndex } = require('ramda')
 const day1 = require('./day1')
 const day2 = require('./day2')
 const day3 = require('./day3')
+const day4 = require('./day4')
 
 const mapIndexed = addIndex(map)
 
@@ -27,5 +28,6 @@ cases(
     { task: day2.star2, answer: 699 },
     { task: day3.star1, answer: 153 },
     { task: day3.star2, answer: 2421944712 },
+    { task: day4.star1, answer: 206 },
   ])
 )
