@@ -1,57 +1,58 @@
 const Either = require('data.either')
 const { List } = require('immutable-ext')
-const { pipe, map, filter, length } = require('ramda')
+const { pipe, map, filter, length, reduce } = require('ramda')
 
+const {
+  validate,
+  isPresent,
+  isValidBirthYear,
+  isValidExpirationYear,
+  isValidPassportId,
+  isValidEyeColor,
+  isValidHairColor,
+  isValidHeight,
+  isValidIssueYear,
+} = require('./validator')
 const { readFile } = require('./utils')
-
 const { Left, Right } = Either
 
+const numberParser = (str) => ({ value: Number(str), raw: str })
+const stringParser = (str) => ({ value: str, raw: str })
+
+const parseByKey = {
+  byr: numberParser,
+  iyr: numberParser,
+  eyr: numberParser,
+  hgt: (str) => {
+    const [value, unit] = str.match(new RegExp('([0-9]+)|([a-zA-Z]+)', 'g'))
+
+    return { value, unit, raw: str }
+  },
+  hcl: stringParser,
+  ecl: stringParser,
+  pid: stringParser,
+  cid: numberParser,
+}
+
 const input = readFile('./4.input.txt')
+  .map((contents) => contents.trim())
   .map((contents) => contents.split('\n\n'))
   .map((entries) =>
-    entries.map((entry) => entry.replace(/\n/g, ' ').split(' '))
+    entries.map((entry) => entry.replace(/\n/g, ' ').split(' ')),
   )
   .map((entries) =>
     entries.map((entry) =>
       entry.reduce((acc, dataStr) => {
-        const [key, value] = dataStr.split(':')
-        acc[key] = value
+        const [key, valueStr] = dataStr.split(':')
+
+        acc[key] = parseByKey[key](valueStr)
+
         return acc
-      }, {})
-    )
+      }, {}),
+    ),
   )
 
-const Success = (x) => ({
-  x,
-  isFailure: false,
-  fold: (f, g) => g(x),
-  concat: (other) => (other.isFailure ? other : Success(x)),
-})
-
-const Fail = (x) => ({
-  x,
-  isFailure: true,
-  fold: (f, g) => f(x),
-  concat: (other) => (other.isFailure ? Fail(x).concat(other.x) : Fail(x)),
-})
-
-const Validation = (run) => ({
-  run,
-  concat: (other) =>
-    Validation((key, x) => run(key, x).concat(other.run(key, x))),
-})
-
-const isPresent = Validation((key, x) =>
-  !!x ? Success(x) : Fail([`${key} needs to be present`])
-)
-
-const validate = (spec, obj) =>
-  List(Object.keys(spec)).foldMap(
-    (key) => spec[key].run(key, obj[key]),
-    Success([obj])
-  )
-
-const isValidPassport = {
+const hasRequiredKeys = {
   byr: isPresent,
   iyr: isPresent,
   eyr: isPresent,
@@ -61,14 +62,28 @@ const isValidPassport = {
   pid: isPresent,
 }
 
-const star1 = input.map(
+const getValidPassportLengthBySpec = (spec) =>
   pipe(
-    map((entry) => validate(isValidPassport, entry)),
-    filter((validation) => !validation.isFailure),
-    length
+    map((entry) => validate(spec, entry)),
+    filter((validation) => validation.isFailure === false),
+    length,
   )
-)
+
+const star1 = input.map(getValidPassportLengthBySpec(hasRequiredKeys))
+
+const isValidPassport = {
+  byr: isPresent.concat(isValidBirthYear),
+  iyr: isPresent.concat(isValidIssueYear),
+  eyr: isPresent.concat(isValidExpirationYear),
+  hgt: isPresent.concat(isValidHeight),
+  hcl: isPresent.concat(isValidHairColor),
+  ecl: isPresent.concat(isValidEyeColor),
+  pid: isPresent.concat(isValidPassportId),
+}
+
+const star2 = input.map(getValidPassportLengthBySpec(isValidPassport))
 
 module.exports = {
   star1,
+  star2,
 }
