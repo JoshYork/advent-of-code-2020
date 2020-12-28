@@ -12,6 +12,7 @@ const day2 = require('./day2')
 const day3 = require('./day3')
 const day4 = require('./day4')
 const day5 = require('./day5')
+const day6 = require('./day6')
 
 const mapIndexed = addIndex(map)
 
@@ -39,5 +40,6 @@ cases(
     { task: day4.star2, answer: 123 },
     { task: day5.star1, answer: 832 },
     { task: day5.star2, answer: 517 },
+    { task: day6.star1, answer: 6878 },
   ]),
 )
